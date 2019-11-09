@@ -3,28 +3,32 @@ set -euo pipefail
 
 key="$1"
 
+log () {
+    >&2 echo "$@"
+}
+
 if ! test -e "data/$key"; then
-    >&2 echo "Data not found"
+    log "Data not found"
     if test -e "urls/$key"; then
         # The data doesn't exist, but a URLs file does.
         n="$(wc -l < "urls/$key" | tr -d ' ')"
-        >&2 echo "Attempting to download from $n URL(s)"
+        log "Attempting to download from $n URL(s)"
         tmp="$(mktemp -t stuff)"
         while read url; do
-            >&2 echo "Downloading from $url"
+            log "Downloading from $url"
             curl "$url" > "$tmp" || continue
-            >&2 echo "Validating download"
+            log "Validating download"
             shasum -a256 --check <<< "$key  $tmp" > /dev/null || continue
-            >&2 echo "Successfully downloaded $key"
+            log "Successfully downloaded $key"
             mv "$tmp" "data/$key"
             break
         done < "urls/$key"
         if ! test -e "data/$key"; then
-            >&2 echo "ERROR: could not download $key"
+            log "ERROR: could not download $key"
             exit 1
         fi
     else
-        >&2 echo "ERROR: no data or URLs defined for $key"
+        log "ERROR: no data or URLs defined for $key"
         exit 1
     fi
 fi
