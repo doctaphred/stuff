@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Download to a temp file.
-curl "$1" > tmp
+# Create a temp file.
+tmp="$(mktemp -t stuff)"
+
+# Download to the temp file.
+curl "$1" > "$tmp"
 
 # The first 64 characters of the output is the SHA-256 hash.
-key="$(shasum -a256 tmp | cut -c-64)"
+key="$(shasum -a256 "$tmp" | cut -c-64)"
 
-path="data/$key"
-
-mv tmp "$path"
+mv "$tmp" "data/$key"
 
 echo "$key"
+
+# Save the URL for future use.
+echo "$1" >> "urls/$key"

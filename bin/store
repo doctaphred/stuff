@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Write stdin to a temp file.
-cat > tmp
+# Create a temp file.
+tmp="$(mktemp -t stuff)"
+
+# Write stdin to the temp file.
+cat > "$tmp"
 
 # The first 64 characters of the output is the SHA-256 hash.
-key="$(shasum -a256 tmp | cut -c-64)"
+key="$(shasum -a256 "$tmp" | cut -c-64)"
 
-path="data/$key"
-
-mv tmp "$path"
+mv "$tmp" "data/$key"
 
 echo "$key"
