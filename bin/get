@@ -3,22 +3,31 @@ set -euo pipefail
 
 key="$1"
 
-if test -e "data/$key"; then
-    shasum -a256 --check <<< "$key  data/$key" > /dev/null
-elif test -e "urls/$key"; then
-    tmp="$(mktemp -t stuff)"
-    while read url; do
-        >&2 echo "Downloading from $url"
-        curl "$url" > "$tmp" || continue
-        >&2 echo "Validating data"
-        shasum -a256 --check <<< "$key  $tmp" > /dev/null || continue
-        >&2 echo "Successfully downloaded $key"
-        mv "$tmp" "data/$key"
-        break
-    done < "urls/$key"
-else
-    >&2 echo "ERROR: no data or URLs defined for $key"
-    exit 1
+if ! test -e "data/$key"; then
+    >&2 echo "Data not found"
+    if test -e "urls/$key"; then
+        # The data doesn't exist, but a URLs file does.
+        n="$(wc -l < "urls/$key" | tr -d ' ')"
+        >&2 echo "Attempting to download from $n URL(s)"
+        tmp="$(mktemp -t stuff)"
+        while read url; do
+            >&2 echo "Downloading from $url"
+            curl "$url" > "$tmp" || continue
+            >&2 echo "Validating download"
+            shasum -a256 --check <<< "$key  $tmp" > /dev/null || continue
+            >&2 echo "Successfully downloaded $key"
+            mv "$tmp" "data/$key"
+            break
+        done < "urls/$key"
+        if ! test -e "data/$key"; then
+            >&2 echo "ERROR: could not download $key"
+            exit 1
+        fi
+    else
+        >&2 echo "ERROR: no data or URLs defined for $key"
+        exit 1
+    fi
 fi
 
+shasum -a256 --check <<< "$key  data/$key" > /dev/null
 cat "data/$key"
