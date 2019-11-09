@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Download to a temp file.
+curl "$1" > tmp
+
+# The first 64 characters of the output is the SHA-256 hash.
+key="$(shasum -a256 tmp | cut -c-64)"
+
+path="data/$key"
+
+mv tmp "$path"
+
+echo "$key"
