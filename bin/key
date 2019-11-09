@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# The first 64 characters of the output is the SHA-256 hash.
+shasum -a256 | cut -c-64
