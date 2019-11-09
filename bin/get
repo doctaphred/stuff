@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+key="$1"
+path="data/$key"
+
+# If the file doesn't exist, exit with an error.
+test -e "$path"
+
+shasum -a256 --check <<< "$key  $path" > /dev/null
+
+cat "$path"

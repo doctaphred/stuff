@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+
+
+
+# The first 64 characters of the output is the SHA-256 hash.
+key="$(shasum -a256 "$1" | cut -c-64)"
+
+path="data/$key"
+
+cp "$1" "$path"
+
+echo "$key"
