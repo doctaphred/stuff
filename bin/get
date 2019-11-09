@@ -2,11 +2,23 @@
 set -euo pipefail
 
 key="$1"
-path="data/$key"
 
-# If the file doesn't exist, exit with an error.
-test -e "$path"
+if test -e "data/$key"; then
+    shasum -a256 --check <<< "$key  data/$key" > /dev/null
+elif test -e "urls/$key"; then
+    tmp="$(mktemp -t stuff)"
+    while read url; do
+        >&2 echo "Downloading from $url"
+        curl "$url" > "$tmp" || continue
+        >&2 echo "Validating data"
+        shasum -a256 --check <<< "$key  $tmp" > /dev/null || continue
+        >&2 echo "Successfully downloaded $key"
+        mv "$tmp" "data/$key"
+        break
+    done < "urls/$key"
+else
+    >&2 echo "ERROR: no data or URLs defined for $key"
+    exit 1
+fi
 
-shasum -a256 --check <<< "$key  $path" > /dev/null
-
-cat "$path"
+cat "data/$key"
