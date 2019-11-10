@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+rm "data/$1" || true
+rm "urls/$1" || true
