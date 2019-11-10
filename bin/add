@@ -8,7 +8,7 @@ tmp="$(mktemp -t stuff)"
 cp "$1" "$tmp"
 
 # The first 64 characters of the output is the SHA-256 hash.
-key="$(shasum -a256 "$tmp" | cut -c-64)"
+key="$(<"$tmp" shasum -a256 | cut -c-64)"
 
 mv "$tmp" "data/$key"
 
