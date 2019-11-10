@@ -4,4 +4,4 @@ set -euo pipefail
 key="$1"
 url="$2"
 
-echo "$2" >> "urls/$1"
+echo "$url" >> "urls/$key"
