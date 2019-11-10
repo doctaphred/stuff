@@ -18,3 +18,18 @@ The bin directory includes several utility scripts to manage the data:
 - `delete`: Delete the specified data.
 - `check`: Verify the integrity of all data.
 - `purge`: Delete all data which fails verification.
+
+When attempting to retrieve data, if it is not stored in the local
+repository, the data may still be retrieved if a procedure for
+retrieving or deriving it is known.
+
+A common type of procedure is to retrieve data from a URL; however, URLs
+provide no guarantee of consistency, and may become inaccessible or
+change the data the provide. On the other hand, if multiple URLs are
+known to provide the same data, they may provide redundant access which
+can make up for those limitations.
+
+Lists of URLs for data may be defined in the `urls` directory. If
+requested data is not stored locally, any corresponding URLs will be
+queried until a match is found: the result will be cached in the `data`
+directory and returned.
