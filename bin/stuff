@@ -19,7 +19,7 @@ case "${command}" in
         # The first 64 characters of the output is the SHA-256 hash.
         shasum -a256 | cut -c-64
     ;;
-    check)
+    verify)
         expected="$1"
         actual="$(stuff key)"
         test "$actual" = "$expected"
@@ -58,7 +58,7 @@ case "${command}" in
         key="$1"
         if test -e "$STUFF/data/$key"; then
             # Verify the integrity of the data we have.
-            stuff check "$key" <"$STUFF/data/$key"
+            stuff verify "$key" <"$STUFF/data/$key"
         else
             log "Data not found"
             if test -e "$STUFF/urls/$key"; then
