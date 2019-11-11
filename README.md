@@ -34,3 +34,5 @@ The bin directory includes several utility scripts to manage the data:
 - `purge`: Delete all data and any associated URLs.
 - `check`: Verify the integrity of all data.
 - `clean`: Delete all data which fails verification.
+
+TODO: update ^

@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-key="$1"
-url="$2"
-
-echo "$url" >> "urls/$key"

@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-for path in data/*; do
-    key="$(basename "$path")"
-    echo "$key  $path"
-done | shasum -a256 --check
