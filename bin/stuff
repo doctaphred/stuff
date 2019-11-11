@@ -112,6 +112,18 @@ case "${command}" in
         key="$1"
         rm "$STUFF/data/$key"
     ;;
+    purge)
+        key="$1"
+        rm "$STUFF/data/$key" 2>/dev/null || true
+        rm "$STUFF/urls/$key" 2>/dev/null || true
+        # TODO: remove from names?
+    ;;
+    list)
+        ls "$STUFF/data"
+    ;;
+    names)
+        ls "$STUFF/names"
+    ;;
     *)
         echo "$@"
         echo '¯\_(ツ)_/¯'
