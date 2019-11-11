@@ -4,6 +4,7 @@ set -euo pipefail
 test -v STUFF || export STUFF="$(dirname "$(dirname "$(realpath "$0")")")"
 
 log () {
+    # Echo to stderr.
     >&2 echo "$@"
 }
 
