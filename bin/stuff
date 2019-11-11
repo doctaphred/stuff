@@ -96,11 +96,17 @@ case "${command}" in
     ;;
     define)
         name="$1"
-        cat "$STUFF/names/$name"
+        if test -e "$STUFF/names/$name"; then
+            cat "$STUFF/names/$name"
+        else
+            log "Nothing is named '$name'"
+            exit 1
+        fi
     ;;
     lookup)
         name="$1"
-        stuff get "$(stuff define "$name")"
+        key="$(stuff define "$name")"
+        stuff get "$key"
     ;;
     clear)
         key="$1"
