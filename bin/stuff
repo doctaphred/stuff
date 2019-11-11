@@ -94,9 +94,13 @@ case "${command}" in
         mkdir -p "$STUFF/names"
         echo "$key" >"$STUFF/names/$name"
     ;;
-    lookup)
+    define)
         name="$1"
         cat "$STUFF/names/$name"
+    ;;
+    lookup)
+        name="$1"
+        stuff get "$(stuff define "$name")"
     ;;
     clear)
         key="$1"
