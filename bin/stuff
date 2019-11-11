@@ -125,6 +125,14 @@ case "${command}" in
     names)
         ls "$STUFF/names"
     ;;
+    sanitize)
+        stuff list | while read key; do
+            if ! stuff verify "$key" <"$STUFF/data/$key"; then
+                stuff clear "$key"
+                log "Deleted corrupted data $key"
+            fi
+        done
+    ;;
     *)
         echo "$@"
         echo '¯\_(ツ)_/¯'
