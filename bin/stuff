@@ -232,7 +232,9 @@ ls-keys () {
 clean () {
     key="$1"
     # <"$STUFF/data/$key" verify-key "$key" || clear-key "$key"
-    if ! verify-key "$key" <"$STUFF/data/$key"; then
+    if verify-key "$key" <"$STUFF/data/$key"; then
+        log "Verified $key"
+    else
         clear-key "$key"
         log "Deleted corrupted data $key"
     fi
