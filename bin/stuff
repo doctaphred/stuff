@@ -17,16 +17,18 @@ key () {
 }
 
 verify () {
+    verify-key "$(define "$1")"
+}
+
+verify-key () {
     # Exit 1 if the data at stdin does not match the expected key.
-    #
     expected="$1"
     actual="$(key)"
     test "$actual" = "$expected"
 }
 
-store () {
-    # Store the data from stdin under the appropriate key.
-    #
+save () {
+    # Save the data from stdin and echo its key.
     tempfile="$(mktemp -t stuff)"
     # Write stdin to the temp file, and also derive the key.
     key="$(tee "$tempfile" | key)"
@@ -34,6 +36,13 @@ store () {
     # Now that we know the key, we can just move the temp file.
     mv "$tempfile" "$STUFF/data/$key"
     echo "$key"
+}
+
+save-as () {
+    # Save the data from stdin, and give it a name.
+    name="$1"
+    key="$(save)"
+    name "$key" "$name"
 }
 
 learn () {
@@ -45,9 +54,16 @@ learn () {
     url="$2"
     mkdir -p "$STUFF/urls"
     echo "$url" >>"$STUFF/urls/$key"
+
+    mkdir -p "$STUFF/responses/$url"
+    echo "$key" >"$STUFF/responses/$url/$(date -u +%FT%T)"
 }
 
 locate () {
+    locate-key "$(define "$1")"
+}
+
+locate-key () {
     # List known URLs for the given key.
     #
     # TODO: multiple at once?
@@ -60,62 +76,108 @@ locate () {
 }
 
 download () {
-    # Download, store, and learn a URL.
+    # Download data from the URL, and save both for future use.
     #
     # TODO: multiple at once?
     url="$1"
-    key="$(curl "$url" | store)"
+    key="$(curl -L "$url" | save)"
     # Save the URL for future use.
     learn "$key" "$url"
     echo "$key"
 }
 
+download-all () {
+    xargs -n1 -P32 stuff download
+    # while read url; do download "$url"; done
+    # key="$(curl "$url" | save)"
+    # # Save the URL for future use.
+    # learn "$key" "$url"
+    # echo "$key"
+}
+
+download-as () {
+    name="$1"
+    url="$2"
+    key="$(download "$2")"
+    name "$key" "$name"
+    echo "$key"
+}
+
+update () {
+    name="$1"
+    key="$(define "$name")"
+    locate "$name" | while read url; do
+        key="$(download "$url")" || continue
+        name "$key" "$name"
+        break
+    done
+    echo "$key"
+}
+
 get () {
-    # Retrieve the given key, either from cache or a URL.
+    # Retrieve the data with the given name.
+    #
+    # TODO: multiple at once?
+    name="$1"
+    key="$(define "$name")"
+    log "Retrieving $key"
+    retrieve "$key"
+}
+
+retrieve () {
+    # Retrieve the data with the given key, either from cache or a URL.
     #
     # TODO: multiple at once?
     key="$1"
     if test -e "$STUFF/data/$key"; then
         # Verify the integrity of the data we have.
-        verify "$key" <"$STUFF/data/$key"
+        verify-key "$key" <"$STUFF/data/$key"
     else
-        log "Data not found"
-        if test -e "$STUFF/urls/$key"; then
+        log "No local data for $key"
+        locate-key "$key" | while read url; do
             # The data doesn't exist, but a URLs file does.
-            # Count the lines in the URLs file, and remove the
-            # obnoxious leading whitespace from the result.
-            n="$(wc -l <"$STUFF/urls/$key" | tr -d ' ')"
-            log "Attempting to download from $n URL(s)"
-            while read url; do
-                log "Downloading from $url"
-                actual="$(download "$url" || continue)"
-                if test "$actual" = "$key"; then
-                    log "Successfully downloaded $key"
-                    break
-                else
-                    log "Downloaded unexpected data: $actual"
-                fi
-            done < "$STUFF/urls/$key"
-            if ! test -e "$STUFF/data/$key"; then
-                log "ERROR: could not download $key"
-                exit 1
+            log "Downloading from $url"
+            actual="$(download "$url")" || continue
+            if test "$actual" = "$key"; then
+                log "Successfully downloaded $key"
+                break
+            else
+                log "Received unexpected data: $actual"
             fi
-        else
-            log "ERROR: no data or URLs defined for $key"
+        done
+
+        if ! test -e "$STUFF/data/$key"; then
+            log "ERROR: could not retrieve $key"
             exit 1
         fi
     fi
     cat "$STUFF/data/$key"
 }
 
-call () {
+name () {
     # Assign an arbitrary name to a key.
-    #
-    # TODO: un-name?
     key="$1"
     name="$2"
     mkdir -p "$STUFF/names"
     echo "$key" >"$STUFF/names/$name"
+}
+
+alias () {
+    name="$1"
+    alias="$2"
+    key="$(define "$name")"
+    name "$key" "$alias"
+}
+
+unname () {
+    name="$1"
+    if test -e "$STUFF/names/$name"; then
+        cat "$STUFF/names/$name"
+        rm "$STUFF/names/$name"
+    else
+        log "Nothing is named '$name'"
+        exit 1
+    fi
 }
 
 define () {
@@ -131,16 +193,11 @@ define () {
     fi
 }
 
-lookup () {
-    # Get the data with the given name.
-    #
-    # TODO: multiple at once?
-    name="$1"
-    key="$(define "$name")"
-    get "$key"
+clear () {
+    clear-key "$(define "$1")"
 }
 
-clear () {
+clear-key () {
     # Remove the key' data from cache.
     #
     # TODO: multiple at once?
@@ -149,6 +206,10 @@ clear () {
 }
 
 purge () {
+    purge-key "$(define "$1")"
+}
+
+purge-key () {
     # Remove the key's data, and any known URLs.
     #
     # TODO: multiple at once?
@@ -158,28 +219,34 @@ purge () {
     # TODO: remove from names?
 }
 
-list () {
-    # List all cached keys.
-    #
-    # TODO: List URLs too? Separately?
-    ls "$STUFF/data"
+ls () {
+    # List all names.
+    env ls -1 "$STUFF/names"
 }
 
-names () {
-    # List all names.
-    #
-    ls "$STUFF/names"
+ls-keys () {
+    # List all cached keys.
+    env ls -1 "$STUFF/data"
+}
+
+clean () {
+    key="$1"
+    # <"$STUFF/data/$key" verify-key "$key" || clear-key "$key"
+    if ! verify-key "$key" <"$STUFF/data/$key"; then
+        clear-key "$key"
+        log "Deleted corrupted data $key"
+    fi
 }
 
 sanitize () {
     # Clear any corrupted data from the cache.
-    #
-    list | while read key; do
-        if ! verify "$key" <"$STUFF/data/$key"; then
-            clear "$key"
-            log "Deleted corrupted data $key"
-        fi
-    done
+    ls-keys | xargs -n1 -P "$(nproc)" stuff clean
+    # ls-keys | while read key; do
+    #     if ! verify-key "$key" <"$STUFF/data/$key"; then
+    #         clear-key "$key"
+    #         log "Deleted corrupted data $key"
+    #     fi
+    # done
 }
 
 "$@"
