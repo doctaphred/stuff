@@ -274,7 +274,6 @@ ls-keys () {
 
 clean () {
     key="$(define "$@")"
-    log "Cleaning key '$key'"
     clean-key "$key"
 }
 
@@ -292,8 +291,14 @@ clean-key () {
 }
 
 sanitize () {
+    # Clear any named corrupted data from the cache.
+    # TODO: Avoid redundant aliases.
+    ls | xargs -L1 -P"$(nproc)" stuff clean
+}
+
+sanitize-keys () {
     # Clear any corrupted data from the cache.
-    ls-keys | xargs -n1 -P "$(nproc)" stuff clean-key
+    ls-keys | xargs -L1 -P"$(nproc)" stuff clean-key
 }
 
 "$@"
