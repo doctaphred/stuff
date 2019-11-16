@@ -13,6 +13,12 @@ now () {
     date -u +%FT%T
 }
 
+each () {
+    while read line; do
+        "$@" "$line" || log "ERROR: '$@ $line' returned $?"
+    done
+}
+
 archive () {
     now="$(now)"
     while read path; do
