@@ -45,11 +45,13 @@ key () {
 }
 
 matches () {
-    matches-key "$(define "$@")"
+    # Return 1 if the data at stdin does not match the key with the given name.
+    key="$(define "$@")"
+    matches-key "$key"
 }
 
 matches-key () {
-    # Exit 1 if the data at stdin does not match the expected key.
+    # Return 1 if the data at stdin does not match the expected key.
     expected_key="$1"
     actual_key="$(key)"
     test "$actual_key" = "$expected_key"
@@ -88,7 +90,8 @@ learn () {
 }
 
 locate () {
-    locate-key "$(define "$1")"
+    name="$(define "$@")"
+    locate-key "$name"
 }
 
 locate-key () {
@@ -96,10 +99,13 @@ locate-key () {
     #
     # TODO: multiple at once?
     key="$1"
-    if test -e "$STUFF/urls/$key"; then
-        cat "$STUFF/urls/$key"
+    urls="$STUFF/urls/$key"
+    if n="$(<"$urls" wc -l | tr -d ' ')"; then
+        log "$n URL(s) for key '$key'"
+        cat "$urls"
     else
         log "No known URLs for $key"
+        return 1
     fi
 }
 
@@ -178,7 +184,7 @@ get-key () {
 
         if ! test -e "$STUFF/data/$key"; then
             log "ERROR: could not retrieve $key"
-            exit 1
+            return 1
         fi
     fi
     cat "$STUFF/data/$key"
@@ -195,7 +201,8 @@ name-key () {
     key="$1"
     mkdir -p "$STUFF/names"
     while read name; do
-        echo "$key" | tee "$STUFF/names/$name"
+        log "Name '$name' now refers to '$key'"
+        echo "$key" >"$STUFF/names/$name"
     done
 }
 
@@ -206,7 +213,7 @@ unname () {
         archive "$STUFF/names/$name"
     else
         log "Nothing is named '$name'"
-        exit 1
+        return 1
     fi
 }
 
@@ -218,12 +225,12 @@ define () {
     if test -e "$STUFF/names/$name"; then
         # key="$(cat "$STUFF/names/$name")"
         key="$(<"$STUFF/names/$name")"
-        log "'$name' is mapped to $key"
+        log "Name '$name' refers to key '$key'"
         echo "$key"
         # cat "$STUFF/names/$name"
     else
         log "Nothing is named '$name'"
-        exit 1
+        return 1
     fi
 }
 
@@ -267,16 +274,20 @@ ls-keys () {
 
 clean () {
     key="$(define "$@")"
+    log "Cleaning key '$key'"
     clean-key "$key"
 }
 
 clean-key () {
     key="$1"
-    if matches-key "$key" <"$STUFF/data/$key"; then
-        log "Verified $key"
+    if ! test -e "$STUFF/data/$key"; then
+        log "ERROR: key '$key' not found"
+        return 1
+    elif matches-key "$key" <"$STUFF/data/$key"; then
+        log "Verified data at key '$key'"
     else
         clear-key "$key"
-        log "Deleted corrupted data $key"
+        log "Deleted corrupted data at key '$key'"
     fi
 }
 
