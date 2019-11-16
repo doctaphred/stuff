@@ -8,6 +8,28 @@ log () {
     >&2 echo "$@"
 }
 
+now () {
+    # Utility function.
+    date -u +%FT%T
+}
+
+archive () {
+    now="$(now)"
+    while read path; do
+        dest="$STUFF/archive/$now/$path"
+        mkdir -p "$(dirname "$dest")"
+        mv "$path" "$dest"
+    done
+    echo "$now"
+}
+
+restore () {
+    # Utility function.
+    # Restore the specified archive.
+    timestamp="$1"
+    cp -R "$STUFF/archive/$1/" "$STUFF/"
+}
+
 key () {
     # Derive the key for the data at stdin.
     #
@@ -16,15 +38,15 @@ key () {
     shasum -a256 | cut -c-64
 }
 
-verify () {
-    verify-key "$(define "$1")"
+matches () {
+    matches-key "$(define "$@")"
 }
 
-verify-key () {
+matches-key () {
     # Exit 1 if the data at stdin does not match the expected key.
-    expected="$1"
-    actual="$(key)"
-    test "$actual" = "$expected"
+    expected_key="$1"
+    actual_key="$(key)"
+    test "$actual_key" = "$expected_key"
 }
 
 save () {
@@ -40,7 +62,7 @@ save () {
 
 save-as () {
     # Save the data from stdin, and give it a name.
-    name="$1"
+    name="$@"
     key="$(save)"
     name "$key" "$name"
 }
@@ -55,8 +77,8 @@ learn () {
     mkdir -p "$STUFF/urls"
     echo "$url" >>"$STUFF/urls/$key"
 
-    mkdir -p "$STUFF/responses/$url"
-    echo "$key" >"$STUFF/responses/$url/$(date -u +%FT%T)"
+    # mkdir -p "$STUFF/responses/$url"
+    # echo "$key" >"$STUFF/responses/$url/$(now)"
 }
 
 locate () {
@@ -83,7 +105,8 @@ download () {
     key="$(curl -L "$url" | save)"
     # Save the URL for future use.
     learn "$key" "$url"
-    echo "$key"
+    mkdir -p "$STUFF/responses/$url"
+    echo "$key" | tee "$STUFF/responses/$url/$(now)"
 }
 
 download-all () {
@@ -104,34 +127,35 @@ download-as () {
 }
 
 update () {
-    name="$1"
-    key="$(define "$name")"
-    locate "$name" | while read url; do
-        key="$(download "$url")" || continue
-        name "$key" "$name"
-        break
+    name="$@"
+    old_key="$(define "$name")"
+    locate-key "$old_key" | while read url; do
+        new_key="$(download "$url")" || continue
+        # If the key is different, the name will be reassigned.
+        name-key "$new_key" <<<"$name"
+        echo "$new_key"
+        return
     done
-    echo "$key"
+    return 1
 }
 
 get () {
     # Retrieve the data with the given name.
     #
     # TODO: multiple at once?
-    name="$1"
-    key="$(define "$name")"
-    log "Retrieving $key"
-    retrieve "$key"
+    # name="$@"
+    key="$(define "$@")"
+    get-key "$key"
 }
 
-retrieve () {
+get-key () {
     # Retrieve the data with the given key, either from cache or a URL.
     #
     # TODO: multiple at once?
     key="$1"
     if test -e "$STUFF/data/$key"; then
         # Verify the integrity of the data we have.
-        verify-key "$key" <"$STUFF/data/$key"
+        matches-key "$key" <"$STUFF/data/$key"
     else
         log "No local data for $key"
         locate-key "$key" | while read url; do
@@ -154,26 +178,26 @@ retrieve () {
     cat "$STUFF/data/$key"
 }
 
-name () {
-    # Assign an arbitrary name to a key.
-    key="$1"
-    name="$2"
-    mkdir -p "$STUFF/names"
-    echo "$key" >"$STUFF/names/$name"
+alias () {
+    # Assign additional names to this name's key.
+    key="$(define "$@")"
+    name-key "$key"
 }
 
-alias () {
-    name="$1"
-    alias="$2"
-    key="$(define "$name")"
-    name "$key" "$alias"
+name-key () {
+    # Assign an arbitrary name to the key.
+    key="$1"
+    mkdir -p "$STUFF/names"
+    while read name; do
+        echo "$key" | tee "$STUFF/names/$name"
+    done
 }
 
 unname () {
-    name="$1"
+    name="$@"
     if test -e "$STUFF/names/$name"; then
-        cat "$STUFF/names/$name"
-        rm "$STUFF/names/$name"
+        log <"$STUFF/names/$name"
+        archive "$STUFF/names/$name"
     else
         log "Nothing is named '$name'"
         exit 1
@@ -184,9 +208,13 @@ define () {
     # Get the key with the given name.
     #
     # TODO: multiple at once?
-    name="$1"
+    name="$@"
     if test -e "$STUFF/names/$name"; then
-        cat "$STUFF/names/$name"
+        # key="$(cat "$STUFF/names/$name")"
+        key="$(<"$STUFF/names/$name")"
+        log "'$name' is mapped to $key"
+        echo "$key"
+        # cat "$STUFF/names/$name"
     else
         log "Nothing is named '$name'"
         exit 1
@@ -194,7 +222,8 @@ define () {
 }
 
 clear () {
-    clear-key "$(define "$1")"
+    key="$(define "$@")"
+    clear-key "$key"
 }
 
 clear-key () {
@@ -202,11 +231,12 @@ clear-key () {
     #
     # TODO: multiple at once?
     key="$1"
-    rm "$STUFF/data/$key"
+    archive "$STUFF/data/$key"
 }
 
 purge () {
-    purge-key "$(define "$1")"
+    key="$(define "$@")"
+    purge-key "$key"
 }
 
 purge-key () {
@@ -214,8 +244,8 @@ purge-key () {
     #
     # TODO: multiple at once?
     key="$1"
-    rm "$STUFF/data/$key" 2>/dev/null || true
-    rm "$STUFF/urls/$key" 2>/dev/null || true
+    archive "$STUFF/data/$key" 2>/dev/null || true
+    archive "$STUFF/urls/$key" 2>/dev/null || true
     # TODO: remove from names?
 }
 
@@ -230,9 +260,13 @@ ls-keys () {
 }
 
 clean () {
+    key="$(define "$@")"
+    clean-key "$key"
+}
+
+clean-key () {
     key="$1"
-    # <"$STUFF/data/$key" verify-key "$key" || clear-key "$key"
-    if verify-key "$key" <"$STUFF/data/$key"; then
+    if matches-key "$key" <"$STUFF/data/$key"; then
         log "Verified $key"
     else
         clear-key "$key"
@@ -242,13 +276,7 @@ clean () {
 
 sanitize () {
     # Clear any corrupted data from the cache.
-    ls-keys | xargs -n1 -P "$(nproc)" stuff clean
-    # ls-keys | while read key; do
-    #     if ! verify-key "$key" <"$STUFF/data/$key"; then
-    #         clear-key "$key"
-    #         log "Deleted corrupted data $key"
-    #     fi
-    # done
+    ls-keys | xargs -n1 -P "$(nproc)" stuff clean-key
 }
 
 "$@"
