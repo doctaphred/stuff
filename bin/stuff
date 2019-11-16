@@ -102,7 +102,7 @@ download () {
     #
     # TODO: multiple at once?
     url="$1"
-    key="$(curl -L "$url" | save)"
+    key="$(curl --proto-default https --location "$url" | save)"
     # Save the URL for future use.
     learn "$key" "$url"
     mkdir -p "$STUFF/responses/$url"
