@@ -241,7 +241,7 @@ clear () {
 }
 
 clear-key () {
-    # Remove the key' data from cache.
+    # Remove the key's data from cache.
     #
     # TODO: multiple at once?
     key="$1"
