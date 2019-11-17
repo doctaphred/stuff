@@ -166,8 +166,10 @@ get () {
 
 get-key () {
     # Retrieve the data with the given key, either from cache or a URL.
-    #
-    # TODO: multiple at once?
+    if test $# != 1; then
+        log "ERROR: get-key takes exactly 1 argument; received $#: '$@'"
+        return 1
+    fi
     key="$1"
     if test -e "$STUFF/data/$key"; then
         # Verify the integrity of the data we have.
@@ -282,6 +284,10 @@ clean () {
 }
 
 clean-key () {
+    if test $# != 1; then
+        log "ERROR: clean-key takes exactly 1 argument; received $#: '$@'"
+        return 1
+    fi
     key="$1"
     if ! test -e "$STUFF/data/$key"; then
         log "ERROR: key '$key' not found"
