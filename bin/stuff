@@ -268,12 +268,12 @@ purge-key () {
     # TODO: remove from names?
 }
 
-ls () {
+list () {
     # List all names.
     env ls -1 "$STUFF/names"
 }
 
-ls-keys () {
+list-keys () {
     # List all cached keys.
     env ls -1 "$STUFF/data"
 }
@@ -303,12 +303,12 @@ clean-key () {
 sanitize () {
     # Clear any named corrupted data from the cache.
     # TODO: Avoid redundant aliases.
-    ls | xargs -L1 -P"$(nproc)" stuff clean
+    list | xargs -L1 -P"$(nproc)" stuff clean
 }
 
 sanitize-keys () {
     # Clear any corrupted data from the cache.
-    ls-keys | xargs -L1 -P"$(nproc)" stuff clean-key
+    list-keys | xargs -L1 -P"$(nproc)" stuff clean-key
 }
 
 help () {
