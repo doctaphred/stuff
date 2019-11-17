@@ -310,4 +310,8 @@ help () {
 }
 
 # If no command is given, print help and exit.
-test $# != 0 && "$@" || help
+if test $# = 0; then
+    help
+else
+    "$@"
+fi
