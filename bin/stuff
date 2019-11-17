@@ -301,4 +301,11 @@ sanitize-keys () {
     ls-keys | xargs -L1 -P"$(nproc)" stuff clean-key
 }
 
-"$@"
+help () {
+    log "stuff"
+    # `declare -F` lists all function names in the current shell.
+    declare -F
+}
+
+# If no command is given, print help and exit.
+test $# != 0 && "$@" || help
