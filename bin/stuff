@@ -76,7 +76,7 @@ save-as () {
     # Save the data from stdin, and give it a name.
     name="$@"
     key="$(save)"
-    name "$key" "$name"
+    name-key "$key" "$name"
 }
 
 learn () {
@@ -138,7 +138,7 @@ download-as () {
     name="$1"
     url="$2"
     key="$(download "$2")"
-    name "$key" "$name"
+    name-key "$key" "$name"
     echo "$key"
 }
 
