@@ -4,8 +4,9 @@ set -euo pipefail
 test -v STUFF || STUFF="$(dirname "$(dirname "$(realpath "$0")")")"
 
 log () {
-    # Echo to stderr.
-    >&2 echo "$@"
+    # Echo cyan text to stderr.
+    >&2 echo -e "\033[0;36m${@}\033[0m"
+    # TODO: Multiple colors, add option to disable.
 }
 
 now () {
