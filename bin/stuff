@@ -303,8 +303,9 @@ sanitize-keys () {
 
 help () {
     log "stuff"
-    # `declare -F` lists all function names in the current shell.
-    declare -F
+    # `declare -F` lists all functions defined in the current shell,
+    # but with the prefix 'declare -f ' for some reason.
+    declare -F | sed 's/^declare -f //'
 }
 
 # If no command is given, print help and exit.
