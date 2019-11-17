@@ -55,7 +55,10 @@ matches-key () {
     # Return 1 if the data at stdin does not match the expected key.
     expected_key="$1"
     actual_key="$(key)"
-    test "$actual_key" = "$expected_key"
+    if test "$actual_key" != "$expected_key"; then
+        log "ERROR: expected key '$expected_key', got key '$actual_key'"
+        return 1
+    fi
 }
 
 save () {
