@@ -33,6 +33,10 @@ archive () {
 restore () {
     # Utility function.
     # Restore the specified archive.
+    if test $# != 1; then
+        log "ERROR: '$(basename "$0") ${FUNCNAME[0]}' takes exactly 1 argument; received $#: '$@'"
+        return 1
+    fi
     timestamp="$1"
     cp -R "$STUFF/archive/$1/" "$STUFF/"
 }
@@ -167,7 +171,7 @@ get () {
 get-key () {
     # Retrieve the data with the given key, either from cache or a URL.
     if test $# != 1; then
-        log "ERROR: get-key takes exactly 1 argument; received $#: '$@'"
+        log "ERROR: '$(basename "$0") ${FUNCNAME[0]}' takes exactly 1 argument; received $#: '$@'"
         return 1
     fi
     key="$1"
@@ -285,7 +289,7 @@ clean () {
 
 clean-key () {
     if test $# != 1; then
-        log "ERROR: clean-key takes exactly 1 argument; received $#: '$@'"
+        log "ERROR: '$(basename "$0") ${FUNCNAME[0]}' takes exactly 1 argument; received $#: '$@'"
         return 1
     fi
     key="$1"
