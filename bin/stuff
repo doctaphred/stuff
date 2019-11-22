@@ -84,7 +84,10 @@ save-as () {
     # Save the data from stdin, and give it a name.
     name="$@"
     key="$(save)"
-    name-key "$key" "$name"
+    log "Saving key '$key' as '$name'"
+    name-key "$key" <<<"$name"
+    log "Saved key '$key' as '$name'"
+    echo "$key"
 }
 
 learn () {
@@ -146,7 +149,7 @@ download-as () {
     name="$1"
     url="$2"
     key="$(download "$2")"
-    name-key "$key" "$name"
+    name-key "$key" <<<"$name"
     echo "$key"
 }
 
@@ -213,6 +216,7 @@ alias () {
 
 name-key () {
     # Assign names to the key.
+    # TODO: Accept names from *either* stdin or $@.
     if test $# != 1; then
         log "ERROR: '$(basename "$0") ${FUNCNAME[0]}' takes exactly 1 argument; received $#: '$@'"
         return 1
