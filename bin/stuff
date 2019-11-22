@@ -39,7 +39,7 @@ restore () {
         return 1
     fi
     timestamp="$1"
-    cp -R "$STUFF/archive/$1/" "$STUFF/"
+    cp -R "$STUFF/archive/$timestamp/" "$STUFF/"
 }
 
 key () {
