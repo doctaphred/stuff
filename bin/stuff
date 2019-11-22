@@ -181,6 +181,7 @@ get-key () {
     key="$1"
     if test -e "$STUFF/data/$key"; then
         # Verify the integrity of the data we have.
+        log "Verifying key '$key'"
         matches-key "$key" <"$STUFF/data/$key"
     else
         log "No local data for $key"
