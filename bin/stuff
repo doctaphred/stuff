@@ -229,7 +229,7 @@ unname () {
     name="$@"
     if test -e "$STUFF/names/$name"; then
         log <"$STUFF/names/$name"
-        archive "$STUFF/names/$name"
+        rm "$STUFF/names/$name"
     else
         log "Nothing is named '$name'"
         return 1
@@ -263,7 +263,7 @@ clear-key () {
     #
     # TODO: multiple at once?
     key="$1"
-    archive "$STUFF/data/$key"
+    rm "$STUFF/data/$key"
 }
 
 purge () {
@@ -276,8 +276,8 @@ purge-key () {
     #
     # TODO: multiple at once?
     key="$1"
-    archive "$STUFF/data/$key" 2>/dev/null || true
-    archive "$STUFF/urls/$key" 2>/dev/null || true
+    rm "$STUFF/data/$key" 2>/dev/null || true
+    rm "$STUFF/urls/$key" 2>/dev/null || true
     # TODO: remove from names?
 }
 
