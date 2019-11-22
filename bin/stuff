@@ -10,8 +10,9 @@ log () {
 }
 
 now () {
-    # Utility function.
-    date -u +%FT%T
+    # Echo the current UTC date and time in ISO 8601 format.
+    date -u +%FT%TZ
+    # NOTE: macOS' `date` lacks the `--iso-8601` option.
 }
 
 each () {
