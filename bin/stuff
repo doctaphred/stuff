@@ -208,7 +208,11 @@ alias () {
 }
 
 name-key () {
-    # Assign an arbitrary name to the key.
+    # Assign names to the key.
+    if test $# != 1; then
+        log "ERROR: '$(basename "$0") ${FUNCNAME[0]}' takes exactly 1 argument; received $#: '$@'"
+        return 1
+    fi
     key="$1"
     mkdir -p "$STUFF/names"
     while read name; do
