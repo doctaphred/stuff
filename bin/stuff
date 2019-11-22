@@ -69,11 +69,14 @@ matches-key () {
 save () {
     # Save the data from stdin and echo its key.
     tempfile="$(mktemp -t stuff)"
+    log "Using tempfile $tempfile"
     # Write stdin to the temp file, and also derive the key.
     key="$(tee "$tempfile" | key)"
+    log "Determined key '$key'"
     mkdir -p "$STUFF/data"
     # Now that we know the key, we can just move the temp file.
     mv "$tempfile" "$STUFF/data/$key"
+    log "Saved data with key '$key'"
     echo "$key"
 }
 
