@@ -97,11 +97,15 @@ learn () {
     # TODO: forget?
     key="$1"
     url="$2"
+    urls_file="$STUFF/urls/$key"
     mkdir -p "$STUFF/urls"
-    echo "$url" >>"$STUFF/urls/$key"
+    echo "$url" >>"$urls_file"
 
-    # mkdir -p "$STUFF/responses/$url"
-    # echo "$key" >"$STUFF/responses/$url/$(now)"
+    # Deduplicate adjacent URLs.
+    # TODO: Just avoid writing duplicates in the first place?
+    temp_file="$(mktemp)"
+    uniq "$urls_file" "$temp_file"
+    mv "$temp_file" "$urls_file"
 }
 
 locate () {
