@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Shell test utilities.
+
+log () {
+    # Echo normal text to stderr.
+    >&2 echo -e "\033[0m${@}\033[0m"
+}
+
+info () {
+    # Echo cyan text to stderr.
+    >&2 echo -e "\033[0;36m${@}\033[0m"
+}
+
+ok () {
+    # Echo green text to stderr.
+    >&2 echo -e "\033[0;32m${@}\033[0m"
+}
+
+warn () {
+    # Echo green text to stderr.
+    >&2 echo -e "\033[0;33m${@}\033[0m"
+}
+
+error () {
+    # Echo red text to stderr and exit 1.
+    >&2 echo -e "\033[0;31m${@}\033[0m"
+}
+
+bold () {
+    echo -n -e "\033[01m"
+    "$@"
+    echo -n -e "\033[0m"
+}
+
+# Make these functions available in subshells.
+export -f log info ok warn error
+
+test -v SHT || SHT="$(mktemp -d -t sht)"
+
+expected="$1"
+shift
+if test $# = 0; then
+    name="sht"
+else
+    name="$*"
+fi
+
+results="$(mktemp -d "$SHT/$name.XXX")"
+
+log "${name}:"
+info "  Results in $results"
+
+# Store env vars in results directory.
+>"$results/env" env
+
+set +e  # Don't quit if the command errors.
+# Launch a subshell and execute lines from stdin.
+# (Also write stdin to results file.)
+# TODO: run in a clean environment?
+tee "$results/stdin" | \
+    >"$results/stdout" \
+    2>"$results/stderr" \
+    bash -euxo pipefail
+actual=$?
+set -e  # Resume sanity checking.
+
+if test "$expected" = "$actual"; then
+    ok "  OK!"
+    exit 0
+else
+    error "  ERROR: Test case returned $actual (expected $expected)"
+    error "       env: $results/env"
+    error "     stdin: $results/stdin"
+    error "    stdout: $results/stdout"
+    error "    stderr: $results/stderr"
+    exit 1
+fi

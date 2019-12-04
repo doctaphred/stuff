@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Tests for sht.
+
+# Don't quit after the first error.
+set +e
+
+export SHT="$(mktemp -d -t sht)"
+>&2 echo "sht: results in $SHT"
+
+# TODO: Define all test cases first (write to $SHT), then execute them
+# all in parallel with xargs.
+
+<<EOF sht 0 "Test some basic stuff"
+echo ayy
+>&2 echo lmao
+EOF
+
+<<EOF sht 0 "[Intentional test failure]"
+nope
+EOF
+
+<<EOF sht 0 "Continue running after failure"
+echo yep
+EOF
+
+<<EOF sht 127 "Handle expected nonzero exit codes"
+nope
+EOF
+
+<<EOF sht 0 "Handle duplicate test name"
+echo ayy
+EOF
+
+<<EOF sht 0 "Handle duplicate test name"
+echo ayy
+EOF
+
+<<EOF sht 0
+echo Anonymous test case
+EOF
+
+<<EOF sht 0
+echo Another anonymous test case
+EOF
+
+# TODO:
+# <<EOF sht 0 "Handle test names with '/'"
+# echo ayy
+# EOF
