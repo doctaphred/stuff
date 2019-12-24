@@ -90,7 +90,7 @@ save-as () {
     echo "$key"
 }
 
-learn () {
+learn-url () {
     # Learn a URL for a key.
     #
     # TODO: multiple at once?
@@ -135,7 +135,7 @@ download () {
     url="$1"
     key="$(curl --proto-default https --location "$url" | save)"
     # Save the URL for future use.
-    learn "$key" "$url"
+    learn-url "$key" "$url"
     mkdir -p "$STUFF/responses/$url"
     echo "$key" | tee "$STUFF/responses/$url/$(now)"
 }
@@ -145,7 +145,7 @@ download-all () {
     # while read url; do download "$url"; done
     # key="$(curl "$url" | save)"
     # # Save the URL for future use.
-    # learn "$key" "$url"
+    # learn-url "$key" "$url"
     # echo "$key"
 }
 
