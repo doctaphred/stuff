@@ -271,6 +271,7 @@ clear-key () {
     #
     # TODO: multiple at once?
     key="$1"
+    log "Clearing local data for '$key'"
     rm "$STUFF/data/$key"
 }
 
