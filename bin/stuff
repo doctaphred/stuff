@@ -141,7 +141,7 @@ download () {
 }
 
 download-all () {
-    xargs -n1 -P32 stuff download
+    xargs -n1 -P32 "$0" download
     # while read url; do download "$url"; done
     # key="$(curl "$url" | save)"
     # # Save the URL for future use.
@@ -325,16 +325,16 @@ clean-key () {
 sanitize () {
     # Clear any named corrupted data from the cache.
     # TODO: Avoid redundant aliases.
-    list | xargs -L1 -P"$(nproc)" stuff clean
+    list | xargs -L1 -P"$(nproc)" "$0" clean
 }
 
 sanitize-keys () {
     # Clear any corrupted data from the cache.
-    list-keys | xargs -L1 -P"$(nproc)" stuff clean-key
+    list-keys | xargs -L1 -P"$(nproc)" "$0" clean-key
 }
 
 help () {
-    log "stuff"
+    log "$0"
     # `declare -F` lists all functions defined in the current shell,
     # but with the prefix 'declare -f ' for some reason.
     declare -F | sed 's/^declare -f //'
