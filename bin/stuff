@@ -21,6 +21,10 @@ each () {
     done
 }
 
+where () {
+    echo "$STUFF"
+}
+
 archive () {
     now="$(now)"
     while read path; do
