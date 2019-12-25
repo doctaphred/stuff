@@ -187,7 +187,6 @@ get () {
     # Retrieve the data with the given name.
     #
     # TODO: multiple at once?
-    # name="$@"
     key="$(define "$1")"
     get-key "$key"
 }
