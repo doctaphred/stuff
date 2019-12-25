@@ -160,6 +160,7 @@ download () {
     # TODO: multiple at once?
     _enforce_nargs 1 "$@"
     url="$1"
+    log "Downloading $url"
     key="$(curl --proto-default https --location "$url" | save)"
     # Save the URL for future use.
     learn-url "$key" "$url"
