@@ -18,6 +18,16 @@ log () {
     # TODO: Multiple colors, add option to disable.
 }
 
+_enforce_nargs () {
+    n="$1"
+    shift
+    if test "$#" != "$n"; then
+        info="$(basename "$0").${FUNCNAME[1]}"
+        >&2 echo -e "\033[1;31mERROR: $info expected $n arg(s), but received $#: '$*'\033[0m"
+        return 1
+    fi
+}
+
 now () {
     # Echo the current UTC date and time in ISO 8601 format.
     date -u +%FT%TZ
@@ -47,10 +57,7 @@ archive () {
 restore () {
     # Utility function.
     # Restore the specified archive.
-    if test $# != 1; then
-        log "ERROR: '$(basename "$0") ${FUNCNAME[0]}' takes exactly 1 argument; received $#: '$@'"
-        return 1
-    fi
+    _enforce_nargs 1 "$@"
     timestamp="$1"
     cp -R "$STUFF/archive/$timestamp/" "$STUFF/"
 }
@@ -145,6 +152,7 @@ download () {
     # Download data from the URL, and save both for future use.
     #
     # TODO: multiple at once?
+    _enforce_nargs 1 "$@"
     url="$1"
     key="$(curl --proto-default https --location "$url" | save)"
     # Save the URL for future use.
@@ -193,10 +201,7 @@ get () {
 
 get-key () {
     # Retrieve the data with the given key, either from cache or a URL.
-    if test $# != 1; then
-        log "ERROR: '$(basename "$0") ${FUNCNAME[0]}' takes exactly 1 argument; received $#: '$@'"
-        return 1
-    fi
+    _enforce_nargs 1 "$@"
     key="$1"
     if test -e "$STUFF/data/$key"; then
         # Verify the integrity of the data we have.
@@ -233,10 +238,7 @@ alias () {
 name-key () {
     # Assign names to the key.
     # TODO: Accept names from *either* stdin or $@.
-    if test $# != 1; then
-        log "ERROR: '$(basename "$0") ${FUNCNAME[0]}' takes exactly 1 argument; received $#: '$@'"
-        return 1
-    fi
+    _enforce_nargs 1 "$@"
     key="$1"
     mkdir -p "$STUFF/names"
     while read name; do
@@ -318,10 +320,7 @@ clean () {
 }
 
 clean-key () {
-    if test $# != 1; then
-        log "ERROR: '$(basename "$0") ${FUNCNAME[0]}' takes exactly 1 argument; received $#: '$@'"
-        return 1
-    fi
+    _enforce_nargs 1 "$@"
     key="$1"
     if ! test -e "$STUFF/data/$key"; then
         log "ERROR: key '$key' not found"
