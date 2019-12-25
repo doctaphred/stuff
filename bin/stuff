@@ -65,7 +65,7 @@ key () {
 
 matches () {
     # Return 1 if the data at stdin does not match the key with the given name.
-    key="$(define "$@")"
+    key="$(define "$1")"
     matches-key "$key"
 }
 
@@ -95,7 +95,7 @@ save () {
 
 save-as () {
     # Save the data from stdin, and give it a name.
-    name="$@"
+    name="$1"
     key="$(save)"
     log "Saving key '$key' as '$name'"
     name-key "$key" <<<"$name"
@@ -122,7 +122,7 @@ learn-url () {
 }
 
 locate () {
-    name="$(define "$@")"
+    name="$(define "$1")"
     locate-key "$name"
 }
 
@@ -171,7 +171,7 @@ download-as () {
 }
 
 update () {
-    name="$@"
+    name="$1"
     old_key="$(define "$name")"
     locate-key "$old_key" | while read url; do
         new_key="$(download "$url")" || continue
@@ -188,7 +188,7 @@ get () {
     #
     # TODO: multiple at once?
     # name="$@"
-    key="$(define "$@")"
+    key="$(define "$1")"
     get-key "$key"
 }
 
@@ -227,7 +227,7 @@ get-key () {
 
 alias () {
     # Assign additional names to this name's key.
-    key="$(define "$@")"
+    key="$(define "$1")"
     name-key "$key"
 }
 
@@ -247,7 +247,7 @@ name-key () {
 }
 
 unname () {
-    name="$@"
+    name="$1"
     if test -e "$STUFF/names/$name"; then
         log <"$STUFF/names/$name"
         rm "$STUFF/names/$name"
@@ -261,7 +261,7 @@ define () {
     # Get the key with the given name.
     #
     # TODO: multiple at once?
-    name="$@"
+    name="$1"
     if test -e "$STUFF/names/$name"; then
         # key="$(cat "$STUFF/names/$name")"
         key="$(<"$STUFF/names/$name")"
@@ -275,7 +275,7 @@ define () {
 }
 
 clear () {
-    key="$(define "$@")"
+    key="$(define "$1")"
     clear-key "$key"
 }
 
@@ -289,7 +289,7 @@ clear-key () {
 }
 
 purge () {
-    key="$(define "$@")"
+    key="$(define "$1")"
     purge-key "$key"
 }
 
@@ -314,7 +314,7 @@ list-keys () {
 }
 
 clean () {
-    key="$(define "$@")"
+    key="$(define "$1")"
     clean-key "$key"
 }
 
