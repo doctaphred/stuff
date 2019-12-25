@@ -60,7 +60,7 @@ key () {
     #
     # shasum reads from stdin by default.
     # The first 64 characters of the output is the SHA-256 hash.
-    shasum -a256 | cut -c-64
+    echo -n "sha256:$(shasum -a256 | cut -c-64)"
 }
 
 matches () {
