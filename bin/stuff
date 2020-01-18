@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+IFS=" "  # Needed for reliable behavior of $*
 
 test -v STUFF || STUFF="$(dirname "$(dirname "$(realpath "$0")")")"
 
@@ -14,9 +15,13 @@ log () {
     # stack_depth="${#FUNCNAME[@]}"
     # (Not sure how to actually do the array slice correctly...)
 
-    >&2 echo -e "\033[0;36m[${info}] ${@}\033[0m"
-    # TODO: Multiple colors, add option to disable.
-}
+    printf '\033[0;36m'  # Style: reset; cyan foreground
+    # printf '%(%Y-%m-%d %H:%M:%S)T '  # Timestamp
+    printf '[%s] ' "$info"
+    printf '%s' "$*"  # Print args, joined on first char of IFS
+    printf '\033[0m'  # Style: reset
+    printf '\n'
+} >&2
 
 _enforce_nargs () {
     n="$1"
