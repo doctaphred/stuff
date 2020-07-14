@@ -2,6 +2,7 @@
 """WIP Python implementation."""
 import sys
 from hashlib import sha256
+from os.path import dirname, join
 
 
 def chunks(readinto, buffer):
@@ -219,8 +220,16 @@ class AutoCommandCLI(CommandCLI):
 class StuffCLI(AutoCommandCLI):
     """stuff: a minimal content addressable storage utility"""
 
+    DATA_DIR = 'data'
+
+    def __init__(self):
+        try:
+            self.DIR = self.environ['STUFF']
+        except KeyError:
+            self.DIR = dirname(dirname(__file__))
+
     def key(self):
-        """Derive the key for the data from stdin."""
+        """Output the key for the data from stdin."""
         hasher = sha256()
         relay(self.stdin.readinto1, hasher.update)
         key = hasher.hexdigest()
@@ -230,12 +239,18 @@ class StuffCLI(AutoCommandCLI):
         """Output the data for the given key."""
         raise NotImplementedError
 
+    def _path(self, *components):
+        return join(self.DIR, *components)
+
+    def _path_for(self, key):
+        return self._path(self.DATA_DIR, key)
+
     def path(self, key):
         """Output the filesystem path for the given key."""
-        raise NotImplementedError
+        self.emit_text(self._path_for(key))
 
     def store(self):
-        """Store the data from stdin."""
+        """Store the data from stdin and output its key."""
         raise NotImplementedError
 
     def list(self):
