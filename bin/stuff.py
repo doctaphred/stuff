@@ -2,7 +2,7 @@
 """WIP Python implementation."""
 import sys
 from hashlib import sha256
-from os import listdir
+from os import listdir, makedirs
 from os.path import dirname, join
 from shutil import move
 from tempfile import NamedTemporaryFile
@@ -237,6 +237,7 @@ class StuffCLI(AutoCommandCLI):
         except KeyError:
             self.root_dir = dirname(dirname(__file__))
         self.data_dir = join(self.root_dir, self.DATA_DIR)
+        makedirs(self.data_dir, exist_ok=True)
 
     def key(self):
         """Output the key for the data from stdin."""
