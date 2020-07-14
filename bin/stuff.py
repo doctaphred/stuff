@@ -2,7 +2,10 @@
 """WIP Python implementation."""
 import sys
 from hashlib import sha256
+from os import listdir
 from os.path import dirname, join
+from shutil import move
+from tempfile import NamedTemporaryFile
 
 
 def chunks(readinto, buffer):
@@ -217,6 +220,12 @@ class AutoCommandCLI(CommandCLI):
                 register(cls.commands)(value)
 
 
+class fanout(list):
+    def __call__(self, *args, **kwargs):
+        for func in self:
+            func(*args, **kwargs)
+
+
 class StuffCLI(AutoCommandCLI):
     """stuff: a minimal content addressable storage utility"""
 
@@ -224,9 +233,10 @@ class StuffCLI(AutoCommandCLI):
 
     def __init__(self):
         try:
-            self.DIR = self.environ['STUFF']
+            self.root_dir = self.environ['STUFF']
         except KeyError:
-            self.DIR = dirname(dirname(__file__))
+            self.root_dir = dirname(dirname(__file__))
+        self.data_dir = join(self.root_dir, self.DATA_DIR)
 
     def key(self):
         """Output the key for the data from stdin."""
@@ -240,10 +250,10 @@ class StuffCLI(AutoCommandCLI):
         raise NotImplementedError
 
     def _path(self, *components):
-        return join(self.DIR, *components)
+        return join(self.root_dir, *components)
 
     def _path_for(self, key):
-        return self._path(self.DATA_DIR, key)
+        return join(self.data_dir, key)
 
     def path(self, key):
         """Output the filesystem path for the given key."""
@@ -251,11 +261,19 @@ class StuffCLI(AutoCommandCLI):
 
     def store(self):
         """Store the data from stdin and output its key."""
-        raise NotImplementedError
+        hasher = sha256()
+        with NamedTemporaryFile(delete=False) as f:
+            name = f.name
+            relay(self.stdin.readinto1, fanout([f.write, hasher.update]))
+        key = hasher.hexdigest()
+        path = self._path_for(key)
+        move(name, path)
+        self.emit_text(key)
 
     def list(self):
         """Output all stored keys."""
-        raise NotImplementedError
+        for path in listdir(self.data_dir):
+            self.emit_text(path)
 
     def download(self, url):
         """Download and store data from the given URL."""
