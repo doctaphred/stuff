@@ -82,8 +82,8 @@ def get_doc(obj, default=''):
     return stripped
 
 
-class CLI:
-    """Command line interface helper class."""
+class App:
+    """Helper class for working with envs, args, streams, and exit codes."""
 
     # Set class attributes to enable dependency injection for instances.
     from os import environ
@@ -118,25 +118,9 @@ class CLI:
         for line in self.stdin:
             yield line.rstrip(self.LINE_END)
 
-    def usage(self):
-        """Return a usage message."""
-        return self.__doc__
 
-    def __init_subclass__(cls):
-        """Make sure subclasses define a usage message."""
-        assert cls.__doc__ is not None, cls
-
-    def __call__(self):
-        """Run the CLI."""
-        raise NotImplementedError
-
-    @classmethod
-    def run(cls):
-        cls()()
-
-
-class CommandCLI(CLI):
-    """Command line interface supporting multiple commands."""
+class CLI(App):
+    """Command line interface helper class."""
 
     commands = {}
 
@@ -152,9 +136,7 @@ class CommandCLI(CLI):
 
     def error(self, message):
         """Log usage and exit."""
-        self.log(self.usage())
-        self.log(f"\nError: {message}")
-        return self.exit(1)
+        return self.exit(f"{self.usage()}\nError: {message}")
 
     def info(self, name):
         """Return usage info for the given command."""
@@ -175,7 +157,7 @@ class CommandCLI(CLI):
 
     def usage(self):
         """Return a usage message."""
-        return '\n'.join([super().usage(), '', "Usage:", *self._usages(), ''])
+        return '\n'.join([self.__doc__, '', "Usage:", *self._usages(), ''])
 
     def _usages(self, *, indent='    ', **kwargs):
         """Return usage help for each command."""
@@ -187,6 +169,10 @@ class CommandCLI(CLI):
             if summary else f"{prefix}{usage}"
             for usage, summary in summaries.items()
         ]
+
+    def __init_subclass__(cls):
+        """Make sure subclasses define a usage message."""
+        assert cls.__doc__ is not None, cls
 
     def __call__(self):
         """Run the specified command."""
@@ -208,8 +194,12 @@ class CommandCLI(CLI):
         except TypeError as exc:
             raise self.error(exc)
 
+    @classmethod
+    def run(cls):
+        cls()()
 
-class AutoCommandCLI(CommandCLI):
+
+class AutoCommandCLI(CLI):
     """Auto-register commands from public methods."""
 
     def __init_subclass__(cls):
