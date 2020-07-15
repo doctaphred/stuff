@@ -34,33 +34,6 @@ def chunks(readinto, buffer):
         yield view[:bytes_read]
 
 
-def relay(readinto, consume, *, buffer=None):
-    """Relay chunks of bytes from a producer to a consumer.
-
-    >>> from io import BytesIO
-
-    >>> out = BytesIO()
-    >>> relay(BytesIO(b'ayy lmao').readinto, out.write)
-    >>> out.getvalue()
-    b'ayy lmao'
-
-    >>> relay(
-    ...     readinto=BytesIO(b'ayy lmao').readinto,
-    ...     consume=lambda x: print(x.tobytes()),
-    ...     buffer=bytearray(2),
-    ...  )
-    b'ay'
-    b'y '
-    b'lm'
-    b'ao'
-
-    """
-    if buffer is None:
-        buffer = bytearray(2048)
-    for chunk in chunks(readinto, buffer):
-        consume(chunk)
-
-
 def register(dct, names=()):
     """Add an object to a dict by its name."""
     def registerer(obj):
@@ -210,60 +183,104 @@ class AutoCommandCLI(CLI):
                 register(cls.commands)(value)
 
 
-class fanout(list):
-    def __call__(self, *args, **kwargs):
-        for func in self:
-            func(*args, **kwargs)
+class Stuff:
+
+    def __init__(self, data_dir):
+        self.data_dir = data_dir
+        self.buffer = bytearray(2048)
+
+    def key(self, stream):
+        """Read the data stream and return the key."""
+        hasher = sha256()
+        for chunk in chunks(stream.readinto1, self.buffer):
+            hasher.update(chunk)
+        return hasher.hexdigest()
+
+    def transfer(self, instream, outstream):
+        """Transfer data between streams and return the key."""
+        hasher = sha256()
+        for chunk in chunks(instream.readinto1, self.buffer):
+            hasher.update(chunk)
+            outstream.write(chunk)
+        return hasher.hexdigest()
+
+    def path(self, key):
+        """Return the path to the cache file for the key."""
+        return join(self.data_dir, key)
+
+    def store(self, stream):
+        """Write the data from the stream to cache and return its key."""
+        with NamedTemporaryFile(delete=False) as file:
+            temp_path = file.name
+            key = self.transfer(stream, file)
+        move(temp_path, self.path(key))
+        return key
+
+    def list(self):
+        """Return all stored keys."""
+        return listdir(self.data_dir)
+
+    def get(self, key, stream):
+        """Write the data for the key from cache to the stream."""
+        path = self.path(key)
+        with open(path, 'rb') as file:
+            computed_key = self.transfer(file, stream)
+        stream.flush()
+        if computed_key != key:
+            raise Exception(f"detected data corruption in {path}")
 
 
 class StuffCLI(AutoCommandCLI):
     """stuff: a minimal content addressable storage utility"""
 
-    DATA_DIR = 'data'
-
     def __init__(self):
-        try:
-            self.root_dir = self.environ['STUFF']
-        except KeyError:
-            self.root_dir = dirname(dirname(__file__))
-        self.data_dir = join(self.root_dir, self.DATA_DIR)
-        makedirs(self.data_dir, exist_ok=True)
+        root_dir = self.environ.get('STUFF', dirname(dirname(__file__)))
+        data_dir = join(root_dir, 'data')
+        makedirs(data_dir, exist_ok=True)
+        self.stuff = Stuff(data_dir)
 
     def key(self):
         """Output the key for the data from stdin."""
-        hasher = sha256()
-        relay(self.stdin.readinto1, hasher.update)
-        key = hasher.hexdigest()
-        self.emit_text(key)
+        self.emit_text(self.stuff.key(self.stdin))
 
     def get(self, key):
-        """Output the data for the given key."""
-        raise NotImplementedError
+        """Output the data for the given key.
 
-    def _path(self, *components):
-        return join(self.root_dir, *components)
+        Usage: `stuff get <key>`
 
-    def _path_for(self, key):
-        return join(self.data_dir, key)
+        Example (bash):
+
+            $ stuff get e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+        """  # noqa
+        try:
+            self.stuff.get(key, self.stdout)
+        except FileNotFoundError:
+            raise self.error(f"Error: could not retrieve data for {key}")
 
     def path(self, key):
-        """Output the filesystem path for the given key."""
-        self.emit_text(self._path_for(key))
+        """Output the path to the cache file for the given key."""
+        self.emit_text(self.stuff.path(key))
 
     def store(self):
-        """Store the data from stdin and output its key."""
-        hasher = sha256()
-        with NamedTemporaryFile(delete=False) as f:
-            name = f.name
-            relay(self.stdin.readinto1, fanout([f.write, hasher.update]))
-        key = hasher.hexdigest()
-        path = self._path_for(key)
-        move(name, path)
+        """Store the data from stdin and output its key.
+
+        Example (bash):
+
+            $ printf "ayy lmao" > file.txt
+            $ key=$(stuff store < file.txt)
+            $ echo "$key"
+            363bd719f9697e46e6514bf1f0efce0e5ace75683697fb820065a05c8fb3135e
+            $ stuff get "$key"
+            ayy lmao
+
+        """
+        key = self.stuff.store(self.stdin)
         self.emit_text(key)
 
     def list(self):
         """Output all stored keys."""
-        for path in listdir(self.data_dir):
+        for path in self.stuff.list():
             self.emit_text(path)
 
     def download(self, url):
