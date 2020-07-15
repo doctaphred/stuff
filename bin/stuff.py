@@ -93,6 +93,10 @@ class App:
     stderr = sys.stderr.buffer
     exit = SystemExit
 
+    def error(self, *messages):
+        message = '\n\n'.join(map(str, messages))
+        return self.exit(message)
+
     LINE_END = b'\n'
 
     def emit(self, chunk):
@@ -124,26 +128,26 @@ class CLI(App):
 
     commands = {}
 
+    def __init_subclass__(cls):
+        """Make sure subclasses define a help message."""
+        assert cls.__doc__ is not None, cls
+
     @register(commands)
     def help(self, *args):
         """Output detailed help for the program or a command."""
         if not args:
-            message = self.usage()
+            message = f"{self.__doc__}\n\n{self.usage()}"
         else:
             name = args[0]  # Ignore subsequent args.
             message = self.info(name)
         self.emit_text(message)
-
-    def error(self, message):
-        """Log usage and exit."""
-        return self.exit(f"{self.usage()}\nError: {message}")
 
     def info(self, name):
         """Return usage info for the given command."""
         try:
             command = self.commands[name]
         except KeyError:
-            raise self.error(f"no command named {name!r}")
+            raise self.error(self.usage(), f"Error: no command named {name!r}")
         doc = get_doc(command, "<no help available>")
         return f"{__file__} {name}: {doc}"
 
@@ -157,22 +161,18 @@ class CLI(App):
 
     def usage(self):
         """Return a usage message."""
-        return '\n'.join([self.__doc__, '', "Usage:", *self._usages(), ''])
+        return '\n'.join(self._usage())
 
-    def _usages(self, *, indent='    ', **kwargs):
-        """Return usage help for each command."""
+    def _usage(self, *, indent='    '):
         prefix = f"{indent}{__file__} "
         summaries = {name: self.summary(name) for name in self.commands}
         width = max(len(x) for x in summaries) + len(indent)
-        return [
-            f"{prefix}{usage:{width}}{summary}"
-            if summary else f"{prefix}{usage}"
-            for usage, summary in summaries.items()
-        ]
-
-    def __init_subclass__(cls):
-        """Make sure subclasses define a usage message."""
-        assert cls.__doc__ is not None, cls
+        yield "Usage:"
+        for usage, summary in summaries.items():
+            if summary:
+                yield f"{prefix}{usage:{width}}{summary}"
+            else:
+                yield f"{prefix}{usage}"
 
     def __call__(self):
         """Run the specified command."""
@@ -187,12 +187,12 @@ class CLI(App):
         try:
             command = self.commands[name]
         except KeyError:
-            raise self.error(f"no command named {name!r}")
+            raise self.error(self.usage(), f"Error: no command named {name!r}")
 
         try:
             return command(self, *args)
         except TypeError as exc:
-            raise self.error(exc)
+            raise self.error(self.info(name), f"Error: {exc}")
 
     @classmethod
     def run(cls):
